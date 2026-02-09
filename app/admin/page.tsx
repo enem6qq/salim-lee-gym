@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 
 // Untyped Supabase client - vermeidet TypeScript-Konflikte mit @supabase/ssr
@@ -41,20 +40,19 @@ export default function AdminDashboard() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null)
   const [adminNotes, setAdminNotes] = useState('')
   const [saving, setSaving] = useState(false)
-  const router = useRouter()
 
   // Auth prüfen
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        router.push('/admin/login')
+        window.location.href = '/admin/login'
         return
       }
       setAuthenticated(true)
     }
     checkAuth()
-  }, [router])
+  }, [])
 
   // Buchungen laden
   const loadBookings = useCallback(async () => {
@@ -115,7 +113,7 @@ export default function AdminDashboard() {
   // Logout
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push('/admin/login')
+    window.location.href = '/admin/login'
   }
 
   // Gefilterte Buchungen
