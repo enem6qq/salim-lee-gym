@@ -2,11 +2,30 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabaseClient } from '@/lib/supabase/client'
-import { Database } from '@/types/database.types'
+import { createClient } from '@supabase/supabase-js'
 
-type Booking = Database['public']['Tables']['bookings']['Row']
-type BookingStatus = Database['public']['Enums']['booking_status']
+// Untyped Supabase client - vermeidet TypeScript-Konflikte mit @supabase/ssr
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+type BookingStatus = 'pending' | 'confirmed' | 'cancelled'
+
+interface Booking {
+  id: string
+  created_at: string
+  updated_at: string
+  name: string
+  email: string
+  phone: string | null
+  service: string
+  people: number
+  preferred_date: string | null
+  message: string | null
+  status: BookingStatus
+  admin_notes: string | null
+}
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; color: string; bg: string }> = {
   pending: { label: 'Offen', color: 'text-yellow-400', bg: 'bg-yellow-400/10 border-yellow-400/30' },
@@ -23,7 +42,6 @@ export default function AdminDashboard() {
   const [adminNotes, setAdminNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const router = useRouter()
-  const supabase = getSupabaseClient()
 
   // Auth prüfen
   useEffect(() => {
@@ -36,7 +54,7 @@ export default function AdminDashboard() {
       setAuthenticated(true)
     }
     checkAuth()
-  }, [supabase, router])
+  }, [router])
 
   // Buchungen laden
   const loadBookings = useCallback(async () => {
@@ -49,10 +67,10 @@ export default function AdminDashboard() {
     if (error) {
       console.error('Fehler beim Laden:', error)
     } else {
-      setBookings(data || [])
+      setBookings((data as Booking[]) || [])
     }
     setLoading(false)
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     if (authenticated) {
@@ -65,7 +83,7 @@ export default function AdminDashboard() {
     setSaving(true)
     const { error } = await supabase
       .from('bookings')
-      .update({ status: newStatus } as Record<string, unknown>)
+      .update({ status: newStatus })
       .eq('id', id)
 
     if (!error) {
@@ -82,7 +100,7 @@ export default function AdminDashboard() {
     setSaving(true)
     const { error } = await supabase
       .from('bookings')
-      .update({ admin_notes: adminNotes } as Record<string, unknown>)
+      .update({ admin_notes: adminNotes })
       .eq('id', id)
 
     if (!error) {
