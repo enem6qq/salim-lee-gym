@@ -19,18 +19,30 @@ export default function AdminLoginPage() {
     setLoading(true)
     setError(null)
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (error) {
-      setError('E-Mail oder Passwort ist falsch.')
+      if (error) {
+        setError('E-Mail oder Passwort ist falsch. (' + error.message + ')')
+        setLoading(false)
+        return
+      }
+
+      if (!data.session) {
+        setError('Login erfolgreich aber keine Session erhalten.')
+        setLoading(false)
+        return
+      }
+
+      // Erfolgreich - voller Seitenneulad zum Dashboard
+      window.location.href = '/admin'
+    } catch (err) {
+      setError('Verbindungsfehler: ' + String(err))
       setLoading(false)
-      return
     }
-
-    window.location.href = '/admin'
   }
 
   return (
