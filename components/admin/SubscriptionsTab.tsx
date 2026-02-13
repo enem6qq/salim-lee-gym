@@ -1,12 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Database } from '@/types/database.types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-type Member = Database['public']['Tables']['members']['Row']
-type Subscription = Database['public']['Tables']['subscriptions']['Row']
-type SubStatus = Database['public']['Enums']['subscription_status']
+interface Member { id: string; created_at: string; updated_at: string; name: string; email: string; phone: string | null; notes: string | null; active: boolean }
+interface Subscription { id: string; created_at: string; updated_at: string; member_id: string; name: string; type: string; start_date: string; end_date: string | null; total_units: number | null; remaining_units: number | null; price: number; status: 'active' | 'expired' | 'cancelled' | 'paused'; notes: string | null }
+type SubStatus = 'active' | 'expired' | 'cancelled' | 'paused'
 
 const STATUS_CONFIG: Record<SubStatus, { label: string; color: string; bg: string }> = {
   active: { label: 'Aktiv', color: 'text-green-400', bg: 'bg-green-400/10 border-green-400/30' },
@@ -19,7 +18,7 @@ interface SubscriptionsTabProps {
   subscriptions: Subscription[]
   setSubscriptions: React.Dispatch<React.SetStateAction<Subscription[]>>
   members: Member[]
-  supabase: SupabaseClient<Database>
+  supabase: SupabaseClient
   onRefresh: () => void
 }
 
@@ -68,7 +67,7 @@ export default function SubscriptionsTab({ subscriptions, setSubscriptions, memb
     if (!formData.member_id || !formData.name || !formData.start_date || !formData.price) return
     setSaving(true)
 
-    const insertData: Database['public']['Tables']['subscriptions']['Insert'] = {
+    const insertData = {
       member_id: formData.member_id,
       name: formData.name,
       type: formData.type,
@@ -82,7 +81,7 @@ export default function SubscriptionsTab({ subscriptions, setSubscriptions, memb
 
     const { data, error } = await supabase.from('subscriptions').insert(insertData).select().single()
     if (!error && data) {
-      setSubscriptions(prev => [data, ...prev])
+      setSubscriptions(prev => [data as Subscription, ...prev])
     }
     setSaving(false)
     resetForm()

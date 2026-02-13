@@ -1,11 +1,24 @@
 'use client'
 
 import { useState } from 'react'
-import { Database } from '@/types/database.types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-type Booking = Database['public']['Tables']['bookings']['Row']
-type BookingStatus = Database['public']['Enums']['booking_status']
+type BookingStatus = 'pending' | 'confirmed' | 'cancelled'
+
+interface Booking {
+  id: string
+  created_at: string
+  updated_at: string
+  name: string
+  email: string
+  phone: string | null
+  service: string
+  people: number
+  preferred_date: string | null
+  message: string | null
+  status: BookingStatus
+  admin_notes: string | null
+}
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; color: string; bg: string }> = {
   pending: { label: 'Offen', color: 'text-yellow-400', bg: 'bg-yellow-400/10 border-yellow-400/30' },
@@ -16,7 +29,7 @@ const STATUS_CONFIG: Record<BookingStatus, { label: string; color: string; bg: s
 interface BookingsTabProps {
   bookings: Booking[]
   setBookings: React.Dispatch<React.SetStateAction<Booking[]>>
-  supabase: SupabaseClient<Database>
+  supabase: SupabaseClient
   onRefresh: () => void
 }
 

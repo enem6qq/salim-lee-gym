@@ -1,12 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Database } from '@/types/database.types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-type Member = Database['public']['Tables']['members']['Row']
-type Invoice = Database['public']['Tables']['invoices']['Row']
-type InvoiceStatus = Database['public']['Enums']['invoice_status']
+interface Member { id: string; created_at: string; updated_at: string; name: string; email: string; phone: string | null; notes: string | null; active: boolean }
+interface Invoice { id: string; created_at: string; updated_at: string; member_id: string; invoice_number: string; description: string; amount: number; status: 'open' | 'paid' | 'overdue' | 'cancelled'; due_date: string; paid_date: string | null; notes: string | null }
+type InvoiceStatus = 'open' | 'paid' | 'overdue' | 'cancelled'
 
 const STATUS_CONFIG: Record<InvoiceStatus, { label: string; color: string; bg: string }> = {
   open: { label: 'Offen', color: 'text-yellow-400', bg: 'bg-yellow-400/10 border-yellow-400/30' },
@@ -19,7 +18,7 @@ interface InvoicesTabProps {
   invoices: Invoice[]
   setInvoices: React.Dispatch<React.SetStateAction<Invoice[]>>
   members: Member[]
-  supabase: SupabaseClient<Database>
+  supabase: SupabaseClient
   onRefresh: () => void
 }
 

@@ -1,19 +1,74 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { getSupabaseClient } from '@/lib/supabase/client'
-import { Database } from '@/types/database.types'
+import { createClient } from '@supabase/supabase-js'
 import OverviewTab from '@/components/admin/OverviewTab'
 import BookingsTab from '@/components/admin/BookingsTab'
 import MembersTab from '@/components/admin/MembersTab'
 import SubscriptionsTab from '@/components/admin/SubscriptionsTab'
 import InvoicesTab from '@/components/admin/InvoicesTab'
 
-type Booking = Database['public']['Tables']['bookings']['Row']
-type Member = Database['public']['Tables']['members']['Row']
-type Subscription = Database['public']['Tables']['subscriptions']['Row']
-type Invoice = Database['public']['Tables']['invoices']['Row']
+// Untyped Supabase client - vermeidet TypeScript-Konflikte mit @supabase/ssr
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+interface Booking {
+  id: string
+  created_at: string
+  updated_at: string
+  name: string
+  email: string
+  phone: string | null
+  service: string
+  people: number
+  preferred_date: string | null
+  message: string | null
+  status: 'pending' | 'confirmed' | 'cancelled'
+  admin_notes: string | null
+}
+
+interface Member {
+  id: string
+  created_at: string
+  updated_at: string
+  name: string
+  email: string
+  phone: string | null
+  notes: string | null
+  active: boolean
+}
+
+interface Subscription {
+  id: string
+  created_at: string
+  updated_at: string
+  member_id: string
+  name: string
+  type: string
+  start_date: string
+  end_date: string | null
+  total_units: number | null
+  remaining_units: number | null
+  price: number
+  status: 'active' | 'expired' | 'cancelled' | 'paused'
+  notes: string | null
+}
+
+interface Invoice {
+  id: string
+  created_at: string
+  updated_at: string
+  member_id: string
+  invoice_number: string
+  description: string
+  amount: number
+  status: 'open' | 'paid' | 'overdue' | 'cancelled'
+  due_date: string
+  paid_date: string | null
+  notes: string | null
+}
 
 type TabId = 'overview' | 'bookings' | 'members' | 'subscriptions' | 'invoices'
 
@@ -56,21 +111,17 @@ export default function AdminDashboard() {
   const [showSearchResults, setShowSearchResults] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
 
-  const router = useRouter()
-  const supabase = getSupabaseClient()
-
-  // Auth prüfen
+  // Auth prüfen mit onAuthStateChange (zuverlässiger als getSession)
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        router.push('/admin/login')
-        return
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        setAuthenticated(true)
+      } else {
+        window.location.href = '/admin/login'
       }
-      setAuthenticated(true)
-    }
-    checkAuth()
-  }, [supabase, router])
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   // Alle Daten laden
   const loadData = useCallback(async () => {
@@ -83,13 +134,13 @@ export default function AdminDashboard() {
       supabase.from('invoices').select('*').order('created_at', { ascending: false }),
     ])
 
-    if (bookingsRes.data) setBookings(bookingsRes.data)
-    if (membersRes.data) setMembers(membersRes.data)
-    if (subsRes.data) setSubscriptions(subsRes.data)
-    if (invoicesRes.data) setInvoices(invoicesRes.data)
+    if (bookingsRes.data) setBookings(bookingsRes.data as Booking[])
+    if (membersRes.data) setMembers(membersRes.data as Member[])
+    if (subsRes.data) setSubscriptions(subsRes.data as Subscription[])
+    if (invoicesRes.data) setInvoices(invoicesRes.data as Invoice[])
 
     setLoading(false)
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     if (authenticated) loadData()
@@ -109,7 +160,7 @@ export default function AdminDashboard() {
   // Logout
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push('/admin/login')
+    window.location.href = '/admin/login'
   }
 
   // Globale Suche

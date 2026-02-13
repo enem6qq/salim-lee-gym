@@ -1,13 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Database } from '@/types/database.types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-type Member = Database['public']['Tables']['members']['Row']
-type Subscription = Database['public']['Tables']['subscriptions']['Row']
-type Invoice = Database['public']['Tables']['invoices']['Row']
-type Booking = Database['public']['Tables']['bookings']['Row']
+interface Member { id: string; created_at: string; updated_at: string; name: string; email: string; phone: string | null; notes: string | null; active: boolean }
+interface Subscription { id: string; created_at: string; updated_at: string; member_id: string; name: string; type: string; start_date: string; end_date: string | null; total_units: number | null; remaining_units: number | null; price: number; status: 'active' | 'expired' | 'cancelled' | 'paused'; notes: string | null }
+interface Invoice { id: string; created_at: string; updated_at: string; member_id: string; invoice_number: string; description: string; amount: number; status: 'open' | 'paid' | 'overdue' | 'cancelled'; due_date: string; paid_date: string | null; notes: string | null }
+interface Booking { id: string; created_at: string; updated_at: string; name: string; email: string; phone: string | null; service: string; people: number; preferred_date: string | null; message: string | null; status: 'pending' | 'confirmed' | 'cancelled'; admin_notes: string | null }
 
 interface MembersTabProps {
   members: Member[]
@@ -15,7 +14,7 @@ interface MembersTabProps {
   subscriptions: Subscription[]
   invoices: Invoice[]
   bookings: Booking[]
-  supabase: SupabaseClient<Database>
+  supabase: SupabaseClient
   onRefresh: () => void
   initialSearch?: string
 }
